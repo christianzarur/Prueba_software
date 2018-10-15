@@ -5,7 +5,6 @@ var fs = require('fs');
 var path = require('path');
 
 var User = require('../models/user');
-var Follow = require('../models/follow');
 var Publication = require('../models/publication');
 var jwt = require('../services/jwt');
 
@@ -132,22 +131,6 @@ function getUser(req, res){
 	});
 }
 
-async function followThisUser(identity_user_id, user_id){
-	var following = await Follow.findOne({"user":identity_user_id, "followed":user_id}).exec((err, follow) => {
-			if(err) return handleError(err); 
-			return follow;
-		});
-
-	var followed = await Follow.findOne({"user":user_id, "followed":identity_user_id}).exec((err, follow) => {
-			if(err) return handleError(err); 
-			return follow;
-		});
-
-	return {
-		following: following,
-		followed: followed
-	}
-}
 
 // Devolver un listado de usuarios paginado
 function getUsers(req, res){
@@ -180,36 +163,6 @@ function getUsers(req, res){
 	});	
 }
 
-async function followUserIds(user_id){
-	var following = await Follow.find({"user":user_id}).select({'_id':0, '__v':0, 'user':0}).exec((err, follows) => {
-		return follows;
-	});
-
-	var followed = await Follow.find({"followed":user_id}).select({'_id':0, '__v':0, 'followed':0}).exec((err, follows) => {
-		return follows;
-	});
-
-	// Procesar following ids
-	var following_clean = [];
-
-	following.forEach((follow) => {
-		following_clean.push(follow.followed);
-	});
-	
-	// Procesar followed ids
-	var followed_clean = [];
-
-	followed.forEach((follow) => {
-		followed_clean.push(follow.user);
-	});
-	
-	return {
-		following: following_clean,
-		followed: followed_clean
-	}
-}
-
-
 function getCounters(req, res){
 	var userId = req.user.sub;
 	if(req.params.id){
@@ -221,28 +174,7 @@ function getCounters(req, res){
 	});
 }
 
-async function getCountFollow(user_id){
-	var following = await Follow.count({"user":user_id}).exec((err, count) => {
-		if(err) return handleError(err);
-		return count;
-	});
 
-	var followed = await Follow.count({"followed":user_id}).exec((err, count) => {
-		if(err) return handleError(err);
-		return count;
-	});
-
-	var publications = await Publication.count({"user":user_id}).exec((err, count) => {
-		if(err) return handleError(err);
-		return count;
-	});
-
-	return {
-		following: following,
-		followed: followed,
-		publications: publications
-	}
-}
 
 // Edición de datos de usuario
 function updateUser(req, res){
